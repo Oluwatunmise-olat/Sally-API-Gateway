@@ -1,0 +1,49 @@
+openapi: 3.0.0
+info:
+  title: "API Gateway"
+  version: 1.0.0
+paths:
+  /users:
+    get:
+      summary: Get a list of users
+      responses:
+        '200':
+          description: Successful response
+      tags:
+        - Users
+  /users/{id}:
+    get:
+      summary: Get a user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful response
+        '404':
+          description: User not found
+      tags:
+        - Users
+      x-target: https://custom-api-gateway.elb.aws
+  /customer:
+    post:
+      summary: "Create a customer"
+      responses:
+        201:
+          description: Created
+        401:
+          description: Unauthorized
+      tags:
+        - Customers
+
+
+tags:
+  - name: Users
+    description: User related actions
+    x-target: https://user-service.elb.aws/v1
+  - name: Customers
+    description: Customer related actions
+    x-target: https://customer-service.elb.aws/v1
