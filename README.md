@@ -4,6 +4,7 @@ Loading...
 #### v0 TODO
 - [ ] Config File Validation
 - [ ] Base proxy in place
+- [ ] Pass query strings and parameters and validations
 
 #### v1 TODO
 - [ ] Validate request header and request body
@@ -11,3 +12,5 @@ Loading...
 - [ ] Ip whitelisting
 - [ ] Versioned rollbacks
 - [ ] Deployment pattern
+- [ ] Grpc Support
+- [ ] Reloads due to config changes idk what i am doing 😂

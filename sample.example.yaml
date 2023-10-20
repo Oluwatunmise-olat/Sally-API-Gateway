@@ -9,9 +9,17 @@ paths:
       responses:
         '200':
           description: Successful response
-      tags:
-        - Users
-  /users/{id}:
+      x-tag: Users
+      x-target: https://httpbin.org/get
+    options:
+      summary: Get a list of users
+      responses:
+        '200':
+          description: Successful response
+      x-tag: Users
+      x-target: https://httpbin.org/get
+
+  /users/:id:
     get:
       summary: Get a user by ID
       parameters:
@@ -25,9 +33,8 @@ paths:
           description: Successful response
         '404':
           description: User not found
-      tags:
-        - Users
-      x-target: https://custom-api-gateway.elb.aws
+      x-tag: Users
+      x-target: http://httpbin.org/get
   /customer:
     post:
       summary: "Create a customer"
@@ -36,14 +43,13 @@ paths:
           description: Created
         401:
           description: Unauthorized
-      tags:
-        - Customers
+      x-tag: Customers
 
 
 tags:
   - name: Users
     description: User related actions
-    x-target: https://user-service.elb.aws/v1
+    x-target: http://httpbin.org/get
   - name: Customers
     description: Customer related actions
     x-target: https://customer-service.elb.aws/v1
