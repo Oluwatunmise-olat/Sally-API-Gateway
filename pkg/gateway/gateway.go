@@ -69,11 +69,11 @@ func registerConfigRoutes(r *mux.Router, transformedConfig *validator.Transforme
 
 		logger.Log.WithField(listeningPath, pathMethods).Infoln("Mapping Routes")
 
-		r.Path(listeningPath).Methods(pathMethods...).HandlerFunc(proxy(pathUpstreams, listeningPath))
+		r.Path(listeningPath).Methods(pathMethods...).HandlerFunc(proxy(pathUpstreams))
 	}
 }
 
-func proxy(upstream map[string]string, p string) http.HandlerFunc {
+func proxy(upstream map[string]string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		method := strings.ToLower(r.Method)
 		targetUpstream, ok := upstream[method]
