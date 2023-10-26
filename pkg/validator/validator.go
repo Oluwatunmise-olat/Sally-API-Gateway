@@ -178,5 +178,3 @@ func validateResource(target, resourceTag string, baseTags TransformedBaseTag) (
 
 	return target, nil
 }
-
-// Once config file is passed, validate in background and return response later

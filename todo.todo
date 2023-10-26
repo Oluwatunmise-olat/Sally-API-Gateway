@@ -1,4 +1,4 @@
-- Using Env file
-- Throwing Errors
-- Logging
+- Using Env file **
 - Optimize for performance
+- How to accept config files
+- Intercept response error codes *

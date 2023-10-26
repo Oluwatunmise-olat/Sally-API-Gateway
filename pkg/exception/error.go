@@ -2,7 +2,7 @@ package exception
 
 import (
 	"errors"
-	"log"
+	"github.com/Oluwatunmise-olat/custom-api-gateway/pkg/logger"
 )
 
 type ErrorExceptions struct {
@@ -12,7 +12,7 @@ type ErrorExceptions struct {
 
 func ErrorHandler(e *ErrorExceptions) error {
 	if e != nil {
-		log.Println(e.Err)
+		logger.Log.Error(e.Err, e)
 	}
 
 	err := errors.New(e.Message)
