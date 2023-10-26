@@ -22,7 +22,7 @@ import (
 var router *mux.Router
 
 func Bootstrap() {
-	router = mux.NewRouter()
+	router = mux.NewRouter().StrictSlash(false)
 	registerBaseRoutes(router)
 
 	serverInstance := &http.Server{Addr: ":8080", Handler: router}
@@ -52,11 +52,12 @@ func registerBaseRoutes(router *mux.Router) {
 		handle404(w)
 	})
 
-	router.PathPrefix("/gw-upload").Methods(http.MethodPost).HandlerFunc(handleConfigUpload)
+	router.Path("/gw-upload").Methods(http.MethodPost).HandlerFunc(handleConfigUpload)
 }
 
 // Register Config Routes with mux
 func registerConfigRoutes(r *mux.Router, transformedConfig *validator.TransformedConfig) {
+
 	for listeningPath, allowedMethods := range *transformedConfig {
 		pathMethods := make([]string, 0)
 		pathUpstreams := make(map[string]string)
@@ -67,11 +68,12 @@ func registerConfigRoutes(r *mux.Router, transformedConfig *validator.Transforme
 		}
 
 		logger.Log.WithField(listeningPath, pathMethods).Infoln("Mapping Routes")
-		r.PathPrefix(listeningPath).Methods(pathMethods...).HandlerFunc(proxy(pathUpstreams))
+
+		r.Path(listeningPath).Methods(pathMethods...).HandlerFunc(proxy(pathUpstreams, listeningPath))
 	}
 }
 
-func proxy(upstream map[string]string) http.HandlerFunc {
+func proxy(upstream map[string]string, p string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		method := strings.ToLower(r.Method)
 		targetUpstream, ok := upstream[method]
@@ -86,8 +88,11 @@ func proxy(upstream map[string]string) http.HandlerFunc {
 
 		if err == nil {
 			proxy := httputil.NewSingleHostReverseProxy(parsedUrl)
-			initialProxyDirector := proxy.Director
+			proxy.ErrorHandler = func(writer http.ResponseWriter, request *http.Request, err error) {
+				constructResponse(w, http.StatusBadGateway, false, fmt.Sprintf("An error occurred accessing service with uri: %s", request.URL.String()))
+			}
 
+			initialProxyDirector := proxy.Director
 			proxy.Director = func(r *http.Request) {
 				initialProxyDirector(r)
 
@@ -106,9 +111,9 @@ func proxy(upstream map[string]string) http.HandlerFunc {
 			}
 
 			proxy.ServeHTTP(w, r)
+		} else {
+			logger.Log.WithField("targetUpstream", targetUpstream).Errorln("An error occurred while parsing upstream server url", err)
 		}
-
-		logger.Log.Errorln("An error occurred while parsing upstream server url", err)
 	}
 }
 
