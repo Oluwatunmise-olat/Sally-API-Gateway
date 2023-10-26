@@ -10,9 +10,9 @@ var (
 		Out: os.Stdout,
 		Formatter: &logrus.JSONFormatter{
 			TimestampFormat: "2006-01-02 15:04:05",
-			PrettyPrint:     false,
+			PrettyPrint:     true,
 		},
 		Level:        logrus.InfoLevel,
-		ReportCaller: false,
+		ReportCaller: true,
 	}
 )

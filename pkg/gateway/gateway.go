@@ -61,6 +61,8 @@ func registerConfigRoutes(r *mux.Router, transformedConfig *validator.Transforme
 		pathMethods := make([]string, 0)
 		pathUpstreams := make(map[string]string)
 
+		fmt.Println(allowedMethods)
+
 		for method, extras := range allowedMethods {
 			pathMethods = append(pathMethods, method)
 			pathUpstreams[method] = extras.Url
@@ -94,6 +96,8 @@ func proxy(upstream map[string]string, isRegexPath bool) http.HandlerFunc {
 
 		parsedUrl, err := url.Parse(targetUpstream)
 
+		fmt.Println(parsedUrl, r.URL.Path)
+
 		if err == nil {
 			proxy := httputil.NewSingleHostReverseProxy(parsedUrl)
 			proxy.ErrorHandler = func(writer http.ResponseWriter, request *http.Request, err error) {
@@ -112,7 +116,6 @@ func proxy(upstream map[string]string, isRegexPath bool) http.HandlerFunc {
 
 				r.Header.Set("X-Forwarded-For", clientIP)
 				r.Header.Set("User-Agent", r.UserAgent())
-				r.URL.Scheme = "https"
 				r.Host = parsedUrl.Host
 				r.URL.Host = parsedUrl.Host
 				r.URL.Path = parsedUrl.Path
@@ -145,6 +148,7 @@ func handleConfigUpload(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		constructResponse(w, http.StatusBadRequest, false, "An error occurred parsing config file")
+		return
 	}
 	defer file.Close()
 
@@ -153,14 +157,16 @@ func handleConfigUpload(w http.ResponseWriter, r *http.Request) {
 	config, err := validator.ValidateConfigurationFile("config/app.yaml")
 	if err != nil {
 		constructResponse(w, http.StatusBadRequest, false, "An error occurred validating config file")
+		return
 	}
 
 	registerConfigRoutes(router, &config)
 	constructResponse(w, http.StatusOK, true, "Config File Uploaded Successfully")
+	return
 }
 
 func createOrUpdateConfigFile(w http.ResponseWriter, file multipart.File) {
-	newConfigFile, err := os.OpenFile("config/app.yaml", os.O_CREATE|os.O_WRONLY, 0644)
+	newConfigFile, err := os.OpenFile("config/app.yaml", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		logger.Log.Errorln("Error occurred copying uploaded config file")
 		constructResponse(w, http.StatusBadRequest, false, "An error occurred")

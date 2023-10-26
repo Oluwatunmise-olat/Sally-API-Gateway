@@ -7,14 +7,16 @@ Loading...
 - [X] Pass query strings and parameters and validations
 - [X] Regex matcher
 - [X] Prevent path overrides
-- [ ] Testing
+- [X] Testing
 
 #### v1 TODO
 - [ ] Validate request header and request body
 - [X] Add Logging integration
-- [ ] Ip whitelisting
+- [ ] Ip white listing/ black listing
 - [ ] Versioned rollbacks
 - [ ] Grpc Support
 
       
-#### How to get started
+#### How to get started (Without Docker)
+
+#### How to get started (With Docker)
