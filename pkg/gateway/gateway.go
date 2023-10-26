@@ -25,7 +25,7 @@ func Bootstrap() {
 	router = mux.NewRouter().StrictSlash(false)
 	registerBaseRoutes(router)
 
-	serverInstance := &http.Server{Addr: ":8080", Handler: router}
+	serverInstance := &http.Server{Addr: fmt.Sprintf(":%s", os.Getenv("PORT")), Handler: router}
 
 	go func() {
 		logger.Log.Infoln("Server started 🚀")
