@@ -26,7 +26,6 @@ func Bootstrap() {
 	registerBaseRoutes(router)
 
 	serverInstance := &http.Server{Addr: fmt.Sprintf(":%s", os.Getenv("PORT")), Handler: router}
-
 	go func() {
 		logger.Log.Infoln("Server started 🚀")
 
@@ -67,17 +66,26 @@ func registerConfigRoutes(r *mux.Router, transformedConfig *validator.Transforme
 			pathUpstreams[method] = extras.Url
 		}
 
+		isRegexPath, listeningPath := checkIfIsRegexPathAndTransformRoute(listeningPath)
+
 		logger.Log.WithField(listeningPath, pathMethods).Infoln("Mapping Routes")
 
-		r.Path(listeningPath).Methods(pathMethods...).HandlerFunc(proxy(pathUpstreams))
+		r.Path(listeningPath).Methods(pathMethods...).HandlerFunc(proxy(pathUpstreams, isRegexPath))
 	}
 }
 
-func proxy(upstream map[string]string) http.HandlerFunc {
+func proxy(upstream map[string]string, isRegexPath bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		method := strings.ToLower(r.Method)
 		targetUpstream, ok := upstream[method]
-		targetUpstream = mapListenerPathAndUpstreamPath(mux.Vars(r), targetUpstream)
+
+		if !isRegexPath {
+			targetUpstream = mapListenerPathAndUpstreamPath(mux.Vars(r), targetUpstream)
+		} else {
+			// Here we append any route called to the upstream server ie. /github/{account+} which was transformed to /github/account
+			// would append any path after /account to the target upstream
+			targetUpstream = targetUpstream + "/" + mux.Vars(r)["route"]
+		}
 
 		if !ok {
 			logger.Log.Errorln(fmt.Sprintf("No Upstream Server Found For Path %s And Method %s", r.URL.Path, method))
@@ -176,4 +184,25 @@ func constructResponse(w http.ResponseWriter, statusCode int, isSuccessful bool,
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	w.Write(response)
+}
+
+// Check if route is in form of a regex pattern identified by the system i.e {route+} and transforms such route
+// ie. /github/{account+} would be transformed into /github/account/*
+func checkIfIsRegexPathAndTransformRoute(path string) (bool, string) {
+	configRegexChars := []string{"{", "+", "}"}
+
+	listeningPathSlice := strings.Split(path, "/")
+	trailingPath := listeningPathSlice[len(listeningPathSlice)-1]
+
+	if strings.Contains(trailingPath, "+") {
+		for _, configChar := range configRegexChars {
+			trailingPath = strings.Replace(trailingPath, configChar, "", -1)
+		}
+
+		trailingPath = strings.Join(listeningPathSlice[:len(listeningPathSlice)-1], "/") + fmt.Sprintf("/%s/{route:.*}", trailingPath)
+
+		return true, trailingPath
+	} else {
+		return false, path
+	}
 }

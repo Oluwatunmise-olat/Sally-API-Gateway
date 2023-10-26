@@ -42,6 +42,15 @@ paths:
         401:
           description: Unauthorized
       x-tag: Customers
+  /{worker+}:
+    post:
+      summary: "Create a customer"
+      responses:
+        201:
+          description: Created
+        401:
+          description: Unauthorized
+      x-tag: Customers
 
 
 tags:

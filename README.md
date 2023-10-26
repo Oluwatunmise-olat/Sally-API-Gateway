@@ -5,7 +5,7 @@ Loading...
 - [X] Config File Upload and Validation
 - [X] Base proxy in place
 - [X] Pass query strings and parameters and validations
-- [ ] Regex matcher
+- [X] Regex matcher
 - [X] Prevent path overrides
 - [ ] Testing
 
