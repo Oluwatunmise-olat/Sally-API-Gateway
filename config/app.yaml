@@ -1,0 +1,53 @@
+openapi: 3.0.0
+info:
+  title: "API Gateway"
+  version: 1.0.0
+paths:
+  /users/{id}:
+    get:
+      summary: Get a user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful response
+        '404':
+          description: User not found
+      x-target: https://httpbin.org/status/{id}
+  /users:
+    get:
+      summary: Get a list of users
+      responses:
+        '200':
+          description: Successful response
+      x-tag: Users
+      x-target: https://httpbin.org/get
+    options:
+      summary: Get a list of users
+      responses:
+        '200':
+          description: Successful response
+      x-tag: Users
+      x-target: https://httpbin.org/get
+  /customer:
+    post:
+      summary: "Create a customer"
+      responses:
+        201:
+          description: Created
+        401:
+          description: Unauthorized
+      x-tag: Customers
+
+
+tags:
+  - name: Users
+    description: User related actions
+    x-target: https://httpbin.org/get
+  - name: Customers
+    description: Customer related actions
+    x-target: https://customer-service.elb.aws/v1

@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Oluwatunmise-olat/custom-api-gateway/pkg/exception"
 	"github.com/Oluwatunmise-olat/custom-api-gateway/pkg/logger"
 	"github.com/Oluwatunmise-olat/custom-api-gateway/pkg/validator"
 	"github.com/gorilla/mux"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -18,14 +19,12 @@ import (
 	"syscall"
 )
 
-func Bootstrap(configFileName string) {
-	config, err := validator.ValidateConfigurationFile(configFileName)
+var router *mux.Router
 
-	if err != nil {
-		_ = exception.ErrorHandler(&exception.ErrorExceptions{Message: "...Testing", Err: err})
-	}
+func Bootstrap() {
+	router = mux.NewRouter()
+	registerBaseRoutes(router)
 
-	router := startServer(&config)
 	serverInstance := &http.Server{Addr: ":8080", Handler: router}
 
 	go func() {
@@ -48,16 +47,16 @@ func Bootstrap(configFileName string) {
 	}
 }
 
-func startServer(transformedConfig *validator.TransformedConfig) *mux.Router {
-	router := mux.NewRouter()
+func registerBaseRoutes(router *mux.Router) {
+	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handle404(w)
+	})
 
-	registerRoutes(router, transformedConfig)
-
-	return router
+	router.PathPrefix("/gw-upload").Methods(http.MethodPost).HandlerFunc(handleConfigUpload)
 }
 
 // Register Config Routes with mux
-func registerRoutes(r *mux.Router, transformedConfig *validator.TransformedConfig) {
+func registerConfigRoutes(r *mux.Router, transformedConfig *validator.TransformedConfig) {
 	for listeningPath, allowedMethods := range *transformedConfig {
 		pathMethods := make([]string, 0)
 		pathUpstreams := make(map[string]string)
@@ -70,10 +69,6 @@ func registerRoutes(r *mux.Router, transformedConfig *validator.TransformedConfi
 		logger.Log.WithField(listeningPath, pathMethods).Infoln("Mapping Routes")
 		r.PathPrefix(listeningPath).Methods(pathMethods...).HandlerFunc(proxy(pathUpstreams))
 	}
-
-	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		handle404(w)
-	})
 }
 
 func proxy(upstream map[string]string) http.HandlerFunc {
@@ -129,13 +124,51 @@ func mapListenerPathAndUpstreamPath(params map[string]string, targetUpstream str
 }
 
 func handle404(w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "application/json")
+	constructResponse(w, http.StatusNotFound, false, "Sigh 🥴, We Could Not Find The Route You Are Trying To Access")
+}
+
+func handleConfigUpload(w http.ResponseWriter, r *http.Request) {
+	file, _, err := r.FormFile("config_file")
+
+	if err != nil {
+		constructResponse(w, http.StatusBadRequest, false, "An error occurred parsing config file")
+	}
+	defer file.Close()
+
+	createOrUpdateConfigFile(w, file)
+
+	config, err := validator.ValidateConfigurationFile("config/app.yaml")
+	if err != nil {
+		constructResponse(w, http.StatusBadRequest, false, "An error occurred validating config file")
+	}
+
+	registerConfigRoutes(router, &config)
+	constructResponse(w, http.StatusOK, true, "Config File Uploaded Successfully")
+}
+
+func createOrUpdateConfigFile(w http.ResponseWriter, file multipart.File) {
+	newConfigFile, err := os.OpenFile("config/app.yaml", os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		logger.Log.Errorln("Error occurred copying uploaded config file")
+		constructResponse(w, http.StatusBadRequest, false, "An error occurred")
+	}
+	defer newConfigFile.Close()
+
+	_, err = io.Copy(newConfigFile, file)
+	if err != nil {
+		logger.Log.Errorln("Error occurred copying uploaded config file")
+		constructResponse(w, http.StatusBadRequest, false, "An error occurred")
+	}
+}
+
+func constructResponse(w http.ResponseWriter, statusCode int, isSuccessful bool, message string) {
 	payload := map[string]interface{}{
-		"status":  false,
-		"message": "Sigh 🥴, We Could Not Find The Route You Are Trying To Access",
+		"status":  isSuccessful,
+		"message": message,
 	}
 
 	response, _ := json.Marshal(payload)
-	w.WriteHeader(http.StatusNotFound)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
 	w.Write(response)
 }
