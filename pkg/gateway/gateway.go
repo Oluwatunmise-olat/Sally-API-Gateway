@@ -61,8 +61,6 @@ func registerConfigRoutes(r *mux.Router, transformedConfig *validator.Transforme
 		pathMethods := make([]string, 0)
 		pathUpstreams := make(map[string]string)
 
-		fmt.Println(allowedMethods)
-
 		for method, extras := range allowedMethods {
 			pathMethods = append(pathMethods, method)
 			pathUpstreams[method] = extras.Url
@@ -95,8 +93,6 @@ func proxy(upstream map[string]string, isRegexPath bool) http.HandlerFunc {
 		}
 
 		parsedUrl, err := url.Parse(targetUpstream)
-
-		fmt.Println(parsedUrl, r.URL.Path)
 
 		if err == nil {
 			proxy := httputil.NewSingleHostReverseProxy(parsedUrl)

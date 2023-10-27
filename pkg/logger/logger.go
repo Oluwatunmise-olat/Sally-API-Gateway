@@ -13,6 +13,6 @@ var (
 			PrettyPrint:     true,
 		},
 		Level:        logrus.InfoLevel,
-		ReportCaller: true,
+		ReportCaller: false,
 	}
 )
