@@ -34,7 +34,7 @@ jobs:
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
           script: |
-            scp -o StrictHostKeyChecking=no -p ${{ secrets.PORT }} ./app ${{ secrets.USERNAME }}@${{ secrets.HOST }}:~/app
+            scp -o StrictHostKeyChecking=no -p ${{ secrets.PORT }} -i ${{ secrets.KEY }} ./app ${{ secrets.USERNAME }}@${{ secrets.HOST }}:~/app
 
       - name: Restart Application
         uses: appleboy/ssh-action@v1.0.0
