@@ -1,0 +1,47 @@
+name: Sally CD Pipeline
+
+on:
+  push:
+    branches:
+      - master
+      - main
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Out Code
+        uses: actions/checkout@v2
+
+      - name: Set Up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.23
+
+      - name: Get Commit Hash
+        id: get_commit_hash
+        run: echo ::set-output name=COMMIT_HASH::${{ github.sha }}
+
+      - name: Build Artifact
+        run: GOARCH=amd64 go build -v --tags v-${{ steps.get_commit_hash.outputs.COMMIT_HASH }} -o app
+
+      - name: Deploy Artifact to Server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            scp -o StrictHostKeyChecking=no -P ${{ secrets.PORT }} ./app ${{ secrets.USERNAME }}@${{ secrets.HOST }}:~/app
+
+      - name: Restart Application
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            ssh -o StrictHostKeyChecking=no -p ${{ secrets.PORT }} ${{ secrets.USERNAME }}@${{ secrets.HOST }} "systemctl restart go-app.service"
