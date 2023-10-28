@@ -25,6 +25,11 @@ jobs:
 
       - name: Build Artifact
         run: GOARCH=amd64 go build -v --tags v-${{ steps.get_commit_hash.outputs.COMMIT_HASH }} -o app
+        
+      - name: Set up SSH Agent
+        run: |
+          eval $(ssh-agent)
+          ssh-add - <<< "${{ secrets.KEY }}"
 
       - name: Deploy Artifact to Server
         uses: appleboy/scp-action@master
