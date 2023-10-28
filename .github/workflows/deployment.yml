@@ -24,12 +24,7 @@ jobs:
         run: echo ::set-output name=COMMIT_HASH::${{ github.sha }}
 
       - name: Build Artifact
-        run: GOARCH=amd64 go build -v --tags v-${{ steps.get_commit_hash.outputs.COMMIT_HASH }} -o app
-        
-      - name: Set up SSH Agent
-        run: |
-          eval $(ssh-agent)
-          ssh-add - <<< "${{ secrets.KEY }}"
+        run: GOARCH=amd64 go build -v --tags v-${{ steps.get_commit_hash.outputs.COMMIT_HASH }} -o sally
 
       - name: Deploy Artifact to Server
         uses: appleboy/scp-action@master
@@ -38,7 +33,7 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.KEY }}
           port: ${{ secrets.PORT }}
-          source: "app"
+          source: "sally"
           target: "~/app"
 
       - name: Restart Application
