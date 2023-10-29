@@ -148,7 +148,12 @@ func handleConfigUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	createOrUpdateConfigFile(w, file)
+	err = createOrUpdateConfigFile(w, file)
+
+	if err != nil {
+		constructResponse(w, http.StatusBadRequest, false, "An error occurred")
+		return
+	}
 
 	config, err := validator.ValidateConfigurationFile("config/app.yaml")
 	if err != nil {
@@ -161,18 +166,28 @@ func handleConfigUpload(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func createOrUpdateConfigFile(w http.ResponseWriter, file multipart.File) {
-	newConfigFile, err := os.OpenFile("config/app.yaml", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+func createOrUpdateConfigFile(w http.ResponseWriter, file multipart.File) error {
+	createConfigDirectoryIfNotExists("config")
+
+	newConfigFile, err := os.OpenFile("config/app.yaml", os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 	if err != nil {
-		logger.Log.Errorln("Error occurred copying uploaded config file")
-		constructResponse(w, http.StatusBadRequest, false, "An error occurred")
+		logger.Log.Errorln("Error occurred opening config file directory")
+		return err
 	}
 	defer newConfigFile.Close()
 
 	_, err = io.Copy(newConfigFile, file)
 	if err != nil {
 		logger.Log.Errorln("Error occurred copying uploaded config file")
-		constructResponse(w, http.StatusBadRequest, false, "An error occurred")
+		return err
+	}
+
+	return nil
+}
+
+func createConfigDirectoryIfNotExists(directoryName string) {
+	if _, err := os.Stat(directoryName); os.IsNotExist(err) {
+		os.Mkdir(directoryName, 0755)
 	}
 }
 
