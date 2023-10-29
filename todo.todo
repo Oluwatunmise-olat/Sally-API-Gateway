@@ -1,4 +1,4 @@
 - Optimize for performance ***
 - Containerize Application *******
-- Update ReadMe File *
-- Setup Nginx
+- Update ReadMe File **
+- Allow for sync directory i.e if config file is in config/app.yaml, load it. This would allow for using docker volumes going forward *
