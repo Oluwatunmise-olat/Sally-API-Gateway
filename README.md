@@ -14,6 +14,7 @@ Loading...
 - [X] Add Logging integration
 - [ ] Ip white listing/ black listing
 - [ ] Versioned rollbacks
+- [ ] Allow multiple config files
 - [ ] Grpc Support
 
       
